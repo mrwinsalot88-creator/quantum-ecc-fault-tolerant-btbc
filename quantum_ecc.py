@@ -1,5 +1,5 @@
 """
-Triny Error Correction Framework
+Triinary Error Correction Framework
 Built on Platonic Solid Architecture and Harmonic Resonance Principles
 
 The framework organizes trinary error correction through geometric structure:
@@ -9,7 +9,7 @@ The framework organizes trinary error correction through geometric structure:
 - Dodecahedron (9): Transformation - 9-parameter restoration to trinary poles
 - Icosahedron (9+vortex): Flow - recursive vortex rebalancing
 
-Triny state representation uses angle/phase mapping:
+Triinary state representation uses angle/phase mapping:
 - -1 pole: 30° (π/6) — 3-frequency foundation
 - 0 pole (neutral/center): 60° (π/3) — 6-frequency bridge
 - +1 pole: 90° (π/2) — 9-frequency transformation
