@@ -212,5 +212,6 @@ Contributions welcome. Areas for expansion:
 MIT License - See LICENSE file for details
 
 ## Author
+Dan Brown
 
 Built with harmonic geometry and quantum error correction principles.
