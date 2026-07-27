@@ -152,12 +152,14 @@ The framework uses 3-6-9 as fundamental organizing frequencies:
 - **9**: Transformation and recursive flow (Dodecahedron + Icosahedron)
 
 ### Platonic Geometry
-Each solid represents a distinct quantum operation phase:
-- **Tetrahedron (4)**: Foundation — locked substrate
-- **Cube (6)**: Present — stabilization now
-- **Octahedron (3-6)**: Bridge — measurement and detection
-- **Dodecahedron (9)**: Future — transformation parameters
-- **Icosahedron (9+vortex)**: Flow — recursive refinement
+Each solid represents a distinct quantum operation phase and a stable correspondence in the Codex architecture:
+- **Tetrahedron (3 / Past)**: Primal seed solid; minimal stable volume that holds entangled origin memory and rebuilds through the failsafe.
+- **Cube (6 / Present)**: Earth-stabilization solid; six square faces define protected boundaries where superposition remains contained without premature collapse.
+- **Octahedron (3-6 Bridge)**: Breathing bridge between above and below; the cube dual that balances polarity and carries syndrome information between seed memory and present stabilization.
+- **Dodecahedron (9 / Future)**: Golden-ratio transformation solid; a cosmic container for controlled decoherence, higher-order restoration, and rebirth into expanded coherence.
+- **Icosahedron (9 + Vortex Flow)**: Dynamic dodecahedron dual; the flow-state geometry that amplifies helical correction and recursive adaptive evolution.
+
+These mappings are exposed programmatically through `HarmonicGeometry.platonic_solid_mapping()` for documentation, experiments, and downstream tooling.
 
 ### Unified Mappings
 Frequency → Angle → Quantum Gate
