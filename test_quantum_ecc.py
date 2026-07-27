@@ -59,6 +59,20 @@ class TestHarmonicGeometry(unittest.TestCase):
         # Shifted 0.1 radians from -1 pole
         beat = HarmonicGeometry.detect_frequency_shift(np.pi / 6 + 0.1, TrinaryPole.NEGATIVE)
         self.assertAlmostEqual(beat, 0.1)
+    
+    def test_platonic_solid_mapping_metadata(self):
+        """Test full Codex Platonic-solid correspondence metadata"""
+        mappings = HarmonicGeometry.platonic_solid_mapping()
+
+        self.assertEqual(set(mappings), {
+            'tetrahedron', 'cube', 'octahedron', 'dodecahedron', 'icosahedron'
+        })
+        self.assertEqual(mappings['cube']['axis'], '6 — Present / Earth stabilization')
+        self.assertIn('golden-ratio', mappings['dodecahedron']['geometry'])
+        self.assertEqual(mappings['icosahedron']['axis'], '9 + vortex flow')
+
+        cube_mapping = HarmonicGeometry.platonic_solid_mapping('Cube')
+        self.assertEqual(cube_mapping['temporal'], 'Present container where past memory is actively lived')
 
 
 class TestTrinaryState(unittest.TestCase):

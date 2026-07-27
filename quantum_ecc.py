@@ -53,6 +53,58 @@ class HarmonicGeometry:
         TrinaryPole.POSITIVE: np.pi / 2,      # 90° — 9-frequency transformation (+1)
     }
     
+
+    # Narrative correspondences for the full Metatron/Flower-of-Life solid sequence.
+    # These are metadata descriptors used by documentation and downstream tools; the
+    # executable correction behavior remains in the layer classes below.
+    PLATONIC_SOLID_MAPPINGS = {
+        'tetrahedron': {
+            'axis': '3 — Past / primal seed',
+            'geometry': 'Four triangular faces; minimal stable volume',
+            'function': 'Locked substrate that holds entangled origin memory and rebuilds through the failsafe',
+            'temporal': 'Past memory encoded as the origin state',
+            'quantum': 'Binary/trinary seed memory before active stabilization',
+        },
+        'cube': {
+            'axis': '6 — Present / Earth stabilization',
+            'geometry': 'Six square faces and eight vertices',
+            'function': 'Temple geometry: stable containment, boundary formation, and protected potential',
+            'temporal': 'Present container where past memory is actively lived',
+            'quantum': 'Superposition held within defined boundaries without premature collapse',
+            'egyptian': 'Horus ordered kingship made manifest',
+            'sumerian': 'Enlil structured domain',
+            'frequency': 'Strong mid-range standing-wave resonance',
+        },
+        'octahedron': {
+            'axis': '3-6 bridge / dual aspect',
+            'geometry': 'Eight triangular faces; cube dual with north-south polarity',
+            'function': 'Breathing solid that balances above/below and smooths energy transfer',
+            'temporal': 'Bridge from past seed memory into present stabilization',
+            'quantum': 'Entanglement expressed across opposing planes',
+            'frequency': 'Balanced 3-to-6 harmonic measurement flow',
+        },
+        'dodecahedron': {
+            'axis': '9 — Future / transformation',
+            'geometry': 'Twelve pentagonal faces with golden-ratio structure',
+            'function': 'Cosmic container and rebirth engine for controlled reassembly',
+            'temporal': 'Future as expanded, evolved coherence',
+            'quantum': 'Failsafe geometry for controlled decoherence and higher-order restoration',
+            'egyptian': 'Osiris resurrected form after fragmentation and reassembly',
+            'sumerian': 'Enki fertile wisdom in the Abzu',
+            'frequency': '122 Hz transformative field with higher harmonic generation',
+            'vortex': 'Strong Fibonacci spiral expression in solid form',
+        },
+        'icosahedron': {
+            'axis': '9 + vortex flow',
+            'geometry': 'Twenty triangular faces; dodecahedron dual',
+            'function': 'Flow-state geometry for adaptive recursive evolution',
+            'temporal': 'Active emergence of future transformation',
+            'quantum': 'High superposition potential before correction collapse',
+            'frequency': 'Helical/vortex amplifier for 16-33 Hz infrasound layers',
+            'vortex': 'Duat-Abzu waters represented as geometric motion',
+        },
+    }
+
     # Platonic dimensions as quantum/trinary parameters
     PLATONIC_DIMENSIONS = {
         'tetrahedron': 4,      # 4 faces - trinary substrate (3 poles + 1 locked)
@@ -62,6 +114,26 @@ class HarmonicGeometry:
         'icosahedron': 20,      # 20 faces - recursive vortex iterations
     }
     
+
+    @staticmethod
+    def platonic_solid_mapping(solid: str = None) -> Dict:
+        """Return Codex correspondence metadata for one or all Platonic solids.
+
+        Args:
+            solid: Optional solid name. When omitted, returns the complete mapping.
+
+        Raises:
+            KeyError: If ``solid`` does not match a known Platonic solid.
+        """
+        if solid is None:
+            return HarmonicGeometry.PLATONIC_SOLID_MAPPINGS
+
+        key = solid.lower()
+        if key not in HarmonicGeometry.PLATONIC_SOLID_MAPPINGS:
+            valid = ', '.join(HarmonicGeometry.PLATONIC_SOLID_MAPPINGS)
+            raise KeyError(f"Unknown Platonic solid '{solid}'. Valid solids: {valid}")
+        return HarmonicGeometry.PLATONIC_SOLID_MAPPINGS[key]
+
     @staticmethod
     def get_pole_angle(pole: TrinaryPole) -> float:
         """Get the canonical angle for a trinary pole"""
@@ -141,17 +213,25 @@ class TrinaryState:
             (has_error, error_type)
         """
         detected_pole = HarmonicGeometry.pole_from_angle(self.angle)
-        
-        if detected_pole is None:
-            # State is off a pole—determine error type
-            beat_freq = HarmonicGeometry.detect_frequency_shift(self.angle, self.pole)
+        beat_freq = HarmonicGeometry.detect_frequency_shift(self.angle, self.pole)
+
+        if detected_pole == self.pole and 1e-9 < beat_freq <= 0.15:
+            self.error_type = ErrorType.CENTER_DRIFT
+            self.beat_frequency = beat_freq
+            return True, ErrorType.CENTER_DRIFT
+
+        if detected_pole is None or detected_pole != self.pole:
+            # State is off its intended pole—determine error type
             self.beat_frequency = beat_freq
             
             # Classify error based on angular deviation
-            if self.angle > np.pi / 2 + 0.2:  # Beyond +1 pole
+            if detected_pole is not None and detected_pole != self.pole:
                 self.error_type = ErrorType.POLARITY_INVERSION
                 return True, ErrorType.POLARITY_INVERSION
-            elif self.angle < np.pi / 6 - 0.2:  # Before -1 pole
+            elif self.pole == TrinaryPole.NEGATIVE and self.angle >= np.pi / 2 + 0.2:
+                self.error_type = ErrorType.POLARITY_INVERSION
+                return True, ErrorType.POLARITY_INVERSION
+            elif self.pole == TrinaryPole.POSITIVE and self.angle <= np.pi / 6 - 0.2:
                 self.error_type = ErrorType.POLARITY_INVERSION
                 return True, ErrorType.POLARITY_INVERSION
             elif abs(beat_freq) > 0.15:  # Significant frequency shift
@@ -203,17 +283,17 @@ class Tetrahedron:
     def initialize_logical_state(self, value: int) -> None:
         """Initialize the 3 pole faces to represent a logical state"""
         if value == -1:
-            self.states[0].pole = TrinaryPole.NEGATIVE
-            self.states[1].pole = TrinaryPole.NEGATIVE
-            self.states[2].pole = TrinaryPole.NEGATIVE
+            for state in self.states[:3]:
+                state.pole = TrinaryPole.NEGATIVE
+                state.angle = HarmonicGeometry.get_pole_angle(TrinaryPole.NEGATIVE)
         elif value == 0:
-            self.states[0].pole = TrinaryPole.NEUTRAL
-            self.states[1].pole = TrinaryPole.NEUTRAL
-            self.states[2].pole = TrinaryPole.NEUTRAL
+            for state in self.states[:3]:
+                state.pole = TrinaryPole.NEUTRAL
+                state.angle = HarmonicGeometry.get_pole_angle(TrinaryPole.NEUTRAL)
         elif value == 1:
-            self.states[0].pole = TrinaryPole.POSITIVE
-            self.states[1].pole = TrinaryPole.POSITIVE
-            self.states[2].pole = TrinaryPole.POSITIVE
+            for state in self.states[:3]:
+                state.pole = TrinaryPole.POSITIVE
+                state.angle = HarmonicGeometry.get_pole_angle(TrinaryPole.POSITIVE)
     
     def get_state_snapshot(self) -> Dict:
         """Return current state of all 4 faces"""
@@ -388,7 +468,7 @@ class Icosahedron:
         if iterations is None:
             iterations = self.vortex_iterations
         
-        vortex_states = [state for state in states]  # Copy
+        vortex_states = [TrinaryState(state.pole, state.angle) for state in states]  # Copy
         
         for iteration in range(iterations):
             for state_idx, state in enumerate(vortex_states):
@@ -442,26 +522,25 @@ class TrinaryErrorCorrectionCodex:
         if error_type == ErrorType.POLARITY_INVERSION:
             # Flip to opposite pole
             if state.pole == TrinaryPole.NEGATIVE:
-                state.angle = np.pi / 2
-                state.pole = TrinaryPole.POSITIVE
+                state.angle = np.pi / 2 + magnitude
             elif state.pole == TrinaryPole.POSITIVE:
-                state.angle = np.pi / 6
-                state.pole = TrinaryPole.NEGATIVE
+                state.angle = np.pi / 6 - magnitude
         elif error_type == ErrorType.FREQUENCY_SHIFT:
             # Shift angle away from pole
             state.angle += magnitude
         elif error_type == ErrorType.CENTER_DRIFT:
-            # Drift toward neutral pole
+            # Drift toward/around the neutral pole; a neutral state receives a
+            # small displacement so the syndrome bridge can register the drift.
             neutral_angle = np.pi / 3
-            state.angle = state.angle + magnitude * (neutral_angle - state.angle)
+            drift = magnitude * (neutral_angle - state.angle)
+            state.angle = state.angle + (drift if abs(drift) > 1e-9 else magnitude)
     
     def measure_and_detect(self) -> Dict:
         """Measure syndromes and detect errors"""
-        # Apply stabilization
-        stabilized = self.cube.stabilize()
-        
-        # Measure syndromes
-        syndromes = self.octa.measure_syndromes(stabilized)
+        # Stabilization parameters remain available through the Cube, but syndrome
+        # detection samples the live tetrahedron states so injected deviations are
+        # not hidden before measurement.
+        syndromes = self.octa.measure_syndromes(self.tet.states)
         
         return {
             'syndromes': syndromes,
