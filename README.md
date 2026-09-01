@@ -1,38 +1,252 @@
-# Quantum Error Correction Codex: Harmonic Geometry Framework
+# BTBC — Brown's Trinary-Binary Codex
 
-A fault-tolerant quantum error correction implementation built on **Platonic solid architecture** and **harmonic resonance principles** (3-6-9 fundamental patterns).
+BTBC is an experimental adaptive information architecture. The repository currently contains **two separate research tracks**:
 
-## Overview
+1. **Classical AI memory integrity** — the current primary engineering track.
+2. **Quantum / harmonic-geometry experiments** — an exploratory research track that remains separate from the AI-memory claims.
 
-This framework organizes quantum error correction through 5 layers of geometric and harmonic structure:
+The current priority is to test whether BTBC can improve the reliability of persistent LLM memory under controlled faults while explicitly limiting destructive corrections.
 
-1. **Tetrahedron (4)** — Foundation state: 4-qubit base locked in quantum substrate
-2. **Cube (6)** — Stabilization: 6 stabilizer generators encoding present state
-3. **Octahedron (3-6)** — Syndrome Detection Bridge: harmonic measurement and syndrome mapping
-4. **Dodecahedron (9)** — Error Transformation: 9-parameter correction space
-5. **Icosahedron (9+vortex)** — Recursive Vortex Flow: recursive spiraling correction
+---
 
-Each Platonic solid maps to:
-- **Frequency harmonics**: 3-6-9 resonance ratios
-- **Rotation angles**: 30° (3), 60° (6), 90° (9)
-- **Quantum operations**: encoding, measurement, and correction
-- **Error mapping**: syndrome patterns to harmonic correction parameters
+## Current primary track: AI memory integrity
 
-## Architecture
+The present BTBC memory architecture treats a stored memory as more than an isolated fact. It combines:
 
+- the current observed fact,
+- relationships to other facts,
+- temporal history,
+- source / provenance trust,
+- confidence,
+- and an explicit risk budget.
+
+The controller can choose to:
+
+- **KEEP** a memory,
+- **REPAIR** it,
+- **QUARANTINE / ABSTAIN** when evidence is insufficient,
+- or **ESCALATE** a difficult case to a stronger recovery path.
+
+### BTBC control interpretation
+
+- **0 — ROUTE:** decide how much processing the case requires.
+- **3 — RELATE:** evaluate relational structure and provenance/trust evidence.
+- **6 — STABILIZE:** combine relational and temporal evidence.
+- **9 — FAIL-SAFE:** keep, repair, quarantine, abstain, or escalate.
+- **0 — RETURN:** route escalated cases through the selected safe/recovery path.
+
+The 3-6-9 mapping is currently used as an architectural naming / control framework. The present experiments do **not** establish a special physical law or prove that the numerical 3-6-9 mapping itself causes the measured improvement.
+
+---
+
+## Current internal v1.4 result
+
+The frozen BTBC v1.4 synthetic locked test used **270 fresh worlds across 135 adversarial scenario types** after the risk target and operating point had been selected on separate validation worlds.
+
+| Metric | Internal locked result |
+|---|---:|
+| Raw memory error | 22.4091% |
+| BTBC v1.4 error | 17.6323% |
+| Relative error reduction vs raw | 21.3163% |
+| Repair precision | 96.9089% |
+| False-correction rate | 0.09590% / cell |
+| Declared false-correction budget | 0.10000% / cell |
+| Corrupted-cell recovery fraction | 21.7443% |
+| Scenario averages non-worse than raw | 98.52% |
+
+These results are **internal and synthetic**. They are not independent validation and are not evidence of universal superiority over existing memory systems.
+
+---
+
+## Component ablation result
+
+A component-ablation test was run to identify what is actually producing the measured effect.
+
+### Main findings
+
+- **Relational evidence was essential.** Removing it collapsed the repair advantage to the raw-memory baseline in this implementation.
+- **Temporal history contributed strongly.** Removing it reduced the measured relative error reduction from about 21.3% to about 5.2%, and the ablated controller could not find a validation operating point that satisfied the 0.10% safety budget.
+- **Provenance / trust contributed incremental value.** Removing it weakened recovery but did not destroy the system.
+- **The explicit risk budget is a safety mechanism, not the source of accuracy.** Removing the budget improved raw recovery but increased false corrections to roughly 0.377% per cell, far above the declared 0.10% target.
+- **Router confidence appears mainly useful for safety calibration.** Removing only that feature left accuracy nearly unchanged but pushed false corrections slightly above the target.
+
+The strongest current technical interpretation is therefore:
+
+> The measured BTBC memory-repair effect is primarily coming from relational structure plus temporal history. Provenance/trust adds useful information, while the Layer-0 / Layer-9 risk-control mechanism trades some maximum recovery for lower destructive-correction risk.
+
+---
+
+## New branch: `btbc-local-agent`
+
+This branch is for the first **real LLM-level A/B memory experiment**.
+
+The goal is to run the **same local GGUF model** in two conditions:
+
+### Agent A — plain memory
+
+- same LLM,
+- same prompts,
+- same context size,
+- same conversations,
+- same injected faults,
+- ordinary persistent-memory retrieval,
+- **no BTBC integrity repair**.
+
+### Agent B — BTBC memory
+
+Everything is identical except stored memory is passed through the BTBC integrity layer before trusted context is returned to the LLM.
+
+This isolates the memory architecture as the experimental variable.
+
+---
+
+## Planned local-agent structure
+
+```text
+BTBC_LOCAL_AGENT/
+├── model/
+│   └── model.gguf
+├── btbc/
+│   ├── llm_wrapper.py
+│   ├── memory_engine.py
+│   ├── btbc_controller.py
+│   └── v1_4_config.json
+├── plain_agent/
+│   └── plain_memory.py
+├── tests/
+│   ├── scenarios.json
+│   ├── inject_faults.py
+│   └── compare_agents.py
+├── data/
+│   ├── plain_memory.db
+│   └── btbc_memory.db
+└── results/
 ```
-Tetrahedron (Foundation)
-    ↓
-Cube (Stabilization)
-    ↓
-Octahedron (Syndrome Bridge)
-    ↓
-Dodecahedron (Error Transformation)
-    ↓
-Icosahedron (Recursive Correction)
+
+The model file itself should **not** be committed to GitHub.
+
+---
+
+## Local LLM runtime
+
+The current plan uses a quantized **GGUF** instruct/chat model with `llama-cpp-python`.
+
+Default model path:
+
+```text
+model/model.gguf
 ```
 
-## Installation
+Default hardware mode:
+
+```text
+n_gpu_layers=0
+```
+
+GPU layers should remain configurable so CUDA / Vulkan / other supported acceleration can be enabled later without redesigning the agent.
+
+For chat/instruct models, prefer `create_chat_completion(...)` rather than constructing one raw text prompt.
+
+---
+
+## A/B experimental rule
+
+The A/B test must hold everything constant except memory handling.
+
+Both agents must use the same:
+
+- GGUF model file,
+- model parameters,
+- temperature,
+- random seed where available,
+- context window,
+- system prompt,
+- user messages,
+- scenario order,
+- memory-fault injections,
+- and scoring rules.
+
+The **only intended experimental variable** is:
+
+> plain memory vs BTBC memory integrity.
+
+---
+
+## Faults to test
+
+The local-agent harness should support at least:
+
+- stale facts,
+- contradictory updates,
+- deliberately wrong facts,
+- relationship corruption,
+- poisoned / low-trust sources,
+- duplicate memories,
+- burst corruption,
+- missing facts,
+- legitimate preference changes,
+- legitimate state changes that must **not** be "repaired" back to an older value.
+
+---
+
+## Metrics
+
+Primary deterministic metrics:
+
+- current-fact accuracy,
+- historical-fact accuracy,
+- corrupted-memory recovery,
+- false-correction rate,
+- stale-memory error,
+- false-memory insertion,
+- contradiction resolution,
+- legitimate-change preservation,
+- quarantine / abstention rate,
+- escalation rate,
+- latency,
+- storage overhead,
+- approximate compute / operation count.
+
+Where possible, scenario ground truth must determine the score directly. **Do not use another LLM as the primary judge of whether BTBC won.**
+
+---
+
+## Success criteria
+
+A BTBC-specific advantage is supported only if the frozen implementation provides a materially better accuracy / safety / cost tradeoff than conventional controls under identical conditions, and component ablation shows that at least one BTBC-specific mechanism materially contributes.
+
+A useful result may be:
+
+- **positive:** BTBC improves the tradeoff,
+- **mixed:** BTBC helps only on identifiable fault classes,
+- **negative:** BTBC does not generalize outside the simulator.
+
+All three outcomes are scientifically useful.
+
+---
+
+## Important boundaries
+
+The current AI-memory experiment does **not** establish:
+
+- AI consciousness or sentience,
+- a universal physical 3-6-9 law,
+- quantum-computing advantage,
+- or superiority over every existing AI-memory system.
+
+The quantum track requires its own valid code family, operators, decoder, and circuit-level benchmarks.
+
+---
+
+## Quantum / harmonic-geometry track
+
+The repository also contains the earlier harmonic-geometry quantum experiments, including `quantum_ecc.py` and the Qiskit tests. These should be treated as a **separate exploratory track** from the classical memory-integrity work.
+
+Existing quantum claims should not be used as evidence for the local-agent memory experiment.
+
+---
+
+## Installation — existing quantum environment
 
 ```bash
 git clone https://github.com/mrwinsalot88-creator/quantum-ecc-fault-tolerant-btbc
@@ -40,178 +254,34 @@ cd quantum-ecc-fault-tolerant-btbc
 pip install -r requirements.txt
 ```
 
-## Usage
-
-### Basic Example
-
-```python
-from quantum_ecc import QuantumErrorCorrectionCodex
-
-# Create the complete framework
-codex = QuantumErrorCorrectionCodex()
-
-# Run full encode → measure → correct cycle
-result = codex.run_full_correction_cycle(logical_state=0)
-
-print(f"Logical State: {result['logical_state']}")
-print(f"Syndrome: {result['syndrome']:06b}")
-print(f"Circuit Depth: {result['circuit_depth']}")
-print(f"Stabilizers: {result['stabilizers']}")
-```
-
-### Step-by-Step Encoding
-
-```python
-from quantum_ecc import QuantumErrorCorrectionCodex
-
-codex = QuantumErrorCorrectionCodex()
-
-# Step 1: Encode logical qubit through Tetrahedron + Cube
-qc, qr = codex.encode_logical_qubit(logical_state=1)
-
-# Step 2: Measure syndrome through Octahedron
-qc_measure, cr = codex.measure_syndrome(qc, qr)
-
-# Step 3: Apply correction through Dodecahedron + Icosahedron
-qc_corrected = codex.correct_error(qc, qr, syndrome_result=5)
-```
-
-## Classes
-
-### `HarmonicGeometry`
-Maps frequency, angles, and resonance patterns to quantum parameters.
-
-- `FUNDAMENTAL_RATIOS`: 3-6-9 resonance ratios
-- `PLATONIC_DIMENSIONS`: Vertex/edge counts for each solid
-- `FREQUENCY_ANGLES`: Frequency-to-rotation-angle mappings
-- `harmonic_gate_angle(frequency, phase)`: Calculate rotation angle from harmonic frequency
-
-### `Tetrahedron`
-Foundation layer: creates 4-qubit base and encodes logical state.
-
-- `create_circuit()`: Create base 4-qubit quantum circuit
-- `encode_logical_state(qc, qr, logical_state)`: Encode 0 or 1
-
-### `Cube`
-Stabilization layer: 6 stabilizer generators using harmonic angles.
-
-- `build_stabilizer_circuit(qr)`: Build 6-stabilizer encoding
-- `stabilizer_generators()`: Return stabilizer definitions (XXII, IXXI, etc.)
-
-### `Octahedron`
-Syndrome detection bridge: measure syndromes using 3-6 harmonic patterns.
-
-- `build_syndrome_circuit(qr, stabilizers)`: Build syndrome measurement
-- `decode_syndrome(syndrome)`: Map syndrome bits to error types and frequencies
-
-### `Dodecahedron`
-Error transformation: 9-parameter correction space.
-
-- `build_correction_circuit(qr, syndrome)`: Build correction operations
-
-### `Icosahedron`
-Recursive vortex flow: spiraling corrections through rotation matrices.
-
-- `build_vortex_circuit(qr, syndrome, iterations)`: Build recursive corrections
-
-### `QuantumErrorCorrectionCodex`
-Complete framework orchestrating all 5 layers.
-
-- `encode_logical_qubit(logical_state)`: Encode through Tetrahedron + Cube
-- `measure_syndrome(qc, qr)`: Measure through Octahedron
-- `correct_error(qc, qr, syndrome_result)`: Apply correction through Dodeca + Icosa
-- `run_full_correction_cycle(logical_state)`: Full encode → measure → correct
-
-## Testing
-
-Run the comprehensive test suite:
+The local-agent branch should use a separate dependency file such as:
 
 ```bash
-python -m pytest test_quantum_ecc.py -v
+pip install -r requirements-local-agent.txt
 ```
 
-Or with unittest:
+so the LLM runtime does not unnecessarily disturb the quantum environment.
 
-```bash
-python test_quantum_ecc.py
-```
+---
 
-Tests cover:
-- Harmonic geometry mappings (3-6-9 frequencies)
-- Each Platonic solid layer
-- Full correction cycles
-- Syndrome decoding
-- Circuit construction
+## Immediate next milestone
 
-## Design Principles
+Build and run the local A/B harness, then freeze:
 
-### Harmonic Resonance
-The framework uses 3-6-9 as fundamental organizing frequencies:
-- **3**: Detection and measurement (Octahedron)
-- **6**: Stabilization and present state (Cube)
-- **9**: Transformation and recursive flow (Dodecahedron + Icosahedron)
+1. model hash,
+2. branch commit,
+3. scenario file,
+4. fault seeds,
+5. BTBC policy/config,
+6. raw CSV / JSON results,
+7. environment versions.
 
-### Platonic Geometry
-Each solid represents a distinct quantum operation phase:
-- **Tetrahedron (4)**: Foundation — locked substrate
-- **Cube (6)**: Present — stabilization now
-- **Octahedron (3-6)**: Bridge — measurement and detection
-- **Dodecahedron (9)**: Future — transformation parameters
-- **Icosahedron (9+vortex)**: Flow — recursive refinement
+After the local result is reproducible, move the frozen controller to an external or public long-term-memory workload and seek independent reproduction.
 
-### Unified Mappings
-Frequency → Angle → Quantum Gate
-- 3 Hz → 30° (π/6) → Rotation gates
-- 6 Hz → 60° (π/3) → Stabilizer operations
-- 9 Hz → 90° (π/2) → Complete transformations
-
-## Mathematical Foundation
-
-### Stabilizer Generators
-The 6 stabilizer generators from the Cube layer:
-```
-S1: XXII  (X basis on qubits 0,1)
-S2: IXXI  (X basis on qubits 1,2)
-S3: IIXX  (X basis on qubits 2,3)
-S4: ZZII  (Z basis on qubits 0,1)
-S5: IZZI  (Z basis on qubits 1,2)
-S6: IIZZ  (Z basis on qubits 2,3)
-```
-
-### Syndrome Decoding
-Syndrome bits map to error frequencies:
-- Bits 0-2: 3-frequency errors
-- Bits 3-5: 6-frequency errors
-
-### Vortex Correction
-Icosahedron layer applies 9-parameter corrections in spiral pattern:
-```
-Iteration 0: RX gates
-Iteration 1: RY gates
-Iteration 2: RZ gates
-(repeats with phase shifts)
-```
-
-## References
-
-- Qiskit Documentation: https://qiskit.org/
-- Quantum Error Correction Theory: https://arxiv.org/abs/quant-ph/0110143
-- Platonic Solids in Physics: https://en.wikipedia.org/wiki/Platonic_solid
-
-## Contributing
-
-Contributions welcome. Areas for expansion:
-- Additional error models (depolarizing, amplitude damping)
-- More sophisticated syndrome decoding
-- Optimization of gate sequences
-- Integration with real quantum hardware
-- Extended harmonic framework analysis
-
-## License
-
-MIT License - See LICENSE file for details
+---
 
 ## Author
-Dan Brown
 
-Built with harmonic geometry and quantum error correction principles.
+Daniel Brown
+
+BTBC / Brown's Trinary-Binary Codex
