@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import json
 from pathlib import Path
+import sys
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -10,6 +11,7 @@ MODULE_PATH = REPO_ROOT / "scripts" / "generate_worlds.py"
 spec = importlib.util.spec_from_file_location("generate_worlds", MODULE_PATH)
 assert spec and spec.loader
 mod = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = mod
 spec.loader.exec_module(mod)
 
 
