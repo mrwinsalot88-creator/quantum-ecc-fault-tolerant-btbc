@@ -51,8 +51,8 @@ jobs:
               raise SystemExit(f'router hash mismatch: expected {expected}, got {got}')
           PY
 
-      - name: Run local-agent integration and harness tests
-        run: pytest tests/test_adapter_integration.py tests/test_compare_agents.py -q
+      - name: Run local-agent integration, harness, and merger tests
+        run: pytest tests/test_adapter_integration.py tests/test_compare_agents.py tests/test_merge_ab_results.py -q
 
       - name: Commit deterministic router artifact
         if: success()
