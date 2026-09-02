@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "system_prompt": "Answer using the supplied memory. If the memory does not support an answer, say you do not know.",
+  "scenarios": [
+    {
+      "id": "temporal_low_trust_corruption",
+      "session_id": "s_temporal",
+      "description": "Two trusted historical observations agree on green; a later low-trust injected observation says yellow.",
+      "memories": [
+        {"memory_id":"g1","session_id":"s_temporal","entity":"user","attribute":"favorite_color","value":"green","valid_from":100,"source":"user","source_trust":0.99,"confidence":0.99,"created_at":100,"updated_at":100,"status":"active"},
+        {"memory_id":"g2","session_id":"s_temporal","entity":"user","attribute":"favorite_color","value":"green","valid_from":200,"source":"user","source_trust":0.99,"confidence":0.99,"created_at":200,"updated_at":200,"status":"active"},
+        {"memory_id":"bad1","session_id":"s_temporal","entity":"user","attribute":"favorite_color","value":"yellow","valid_from":300,"source":"injected_fault","source_trust":0.10,"confidence":0.20,"created_at":300,"updated_at":300,"status":"active"}
+      ],
+      "relationships": [],
+      "ground_truth_fields": {"user.favorite_color":"green"},
+      "corrupted_fields": ["user.favorite_color"],
+      "legitimate_fields": [],
+      "query": {"user_message":"What is the user's favorite color?","expected_answers":["green"]}
+    },
+    {
+      "id": "legitimate_recent_change",
+      "session_id": "s_change",
+      "description": "A legitimate high-trust change from blue to green should not be rolled back merely because blue is older.",
+      "memories": [
+        {"memory_id":"old1","session_id":"s_change","entity":"user","attribute":"favorite_color","value":"blue","valid_from":100,"valid_to":300,"source":"user","source_trust":0.99,"confidence":0.99,"created_at":100,"updated_at":100,"status":"active"},
+        {"memory_id":"new1","session_id":"s_change","entity":"user","attribute":"favorite_color","value":"green","valid_from":300,"source":"user","source_trust":0.99,"confidence":0.99,"created_at":300,"updated_at":300,"status":"active"}
+      ],
+      "relationships": [],
+      "ground_truth_fields": {"user.favorite_color":"green"},
+      "corrupted_fields": [],
+      "legitimate_fields": ["user.favorite_color"],
+      "query": {"user_message":"What is the user's favorite color now?","expected_answers":["green"]}
+    },
+    {
+      "id": "independent_field_preservation",
+      "session_id": "s_multi",
+      "description": "A suspect color observation is present while an unrelated trusted location fact must remain untouched.",
+      "memories": [
+        {"memory_id":"c1","session_id":"s_multi","entity":"user","attribute":"favorite_color","value":"green","valid_from":100,"source":"user","source_trust":0.99,"confidence":0.99,"created_at":100,"updated_at":100,"status":"active"},
+        {"memory_id":"c2","session_id":"s_multi","entity":"user","attribute":"favorite_color","value":"green","valid_from":200,"source":"user","source_trust":0.99,"confidence":0.99,"created_at":200,"updated_at":200,"status":"active"},
+        {"memory_id":"c3","session_id":"s_multi","entity":"user","attribute":"favorite_color","value":"yellow","valid_from":300,"source":"injected_fault","source_trust":0.10,"confidence":0.20,"created_at":300,"updated_at":300,"status":"active"},
+        {"memory_id":"l1","session_id":"s_multi","entity":"user","attribute":"home_state","value":"Wisconsin","valid_from":100,"source":"user","source_trust":0.99,"confidence":0.99,"created_at":100,"updated_at":100,"status":"active"}
+      ],
+      "relationships": [],
+      "ground_truth_fields": {"user.favorite_color":"green","user.home_state":"Wisconsin"},
+      "corrupted_fields": ["user.favorite_color"],
+      "legitimate_fields": ["user.home_state"],
+      "query": {"user_message":"What is the user's home state?","expected_answers":["Wisconsin"]}
+    }
+  ]
+}
