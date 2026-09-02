@@ -1,0 +1,11 @@
+{
+  "harm_weight": 4.0,
+  "target_false_correction_rate": 0.001,
+  "threshold": 0.04447377462482015,
+  "validation_error_rate": 0.18369708994708994,
+  "validation_escalated_cells": 4252,
+  "validation_false_correction_rate": 0.000992063492063492,
+  "validation_recovery_calls": 1541,
+  "validation_repair_precision": 0.9657768651608487,
+  "validation_worlds": 135
+}
