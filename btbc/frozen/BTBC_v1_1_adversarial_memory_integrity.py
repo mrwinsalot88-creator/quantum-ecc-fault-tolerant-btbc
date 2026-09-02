@@ -140,6 +140,7 @@ def inject_adversary(rng,obs,obs_r,state_trust,rel_trust,truth,rel_truth,cfg):
     if mode=='none': return obs,obs_r,state_trust,rel_trust,attack_cells,attack_rels
     tmax,n=obs.shape
     if mode in ('poison','mixed'):
+        # high-trust spoof: malicious observations look trustworthy
         t=int(rng.integers(1,tmax-1)); cols=rng.random(n)<.28
         if cols.any():
             obs[t,cols]=other_values(rng,truth[t,cols]); state_trust[t,cols]=np.maximum(state_trust[t,cols],.94); attack_cells[t,cols]=True
@@ -148,12 +149,14 @@ def inject_adversary(rng,obs,obs_r,state_trust,rel_trust,truth,rel_truth,cfg):
         if cols.any():
             obs_r[t,cols]=other_values(rng,rel_truth[t,cols]); rel_trust[t,cols]=np.maximum(rel_trust[t,cols],.90); attack_rels[t,cols]=True
     if mode in ('stale','mixed'):
+        # stale carryover: copy old values over a later window after legitimate evolution
         start=max(2,tmax//2); width=min(3,tmax-start); cols=rng.random(n)<.25
         if width>0 and cols.any():
             stale=truth[start-2,cols].copy()
             for t in range(start,start+width):
                 obs[t,cols]=stale; attack_cells[t,cols]=obs[t,cols]!=truth[t,cols]
     if mode in ('contradict','mixed'):
+        # opposing pockets across adjacent timestamps
         t=max(1,tmax//2-1); cols=rng.random(n)<.20
         if cols.any():
             obs[t,cols]=other_values(rng,truth[t,cols]); obs[t+1,cols]=other_values(rng,truth[t+1,cols])
@@ -224,6 +227,7 @@ def family_votes(obs,obs_r,state_trust,rel_trust,cur,inc,t,i,policy,counters):
     """Return score vectors for independent evidence families: direct, relations, time."""
     direct=np.zeros(3,float); rel=np.zeros(3,float); temp=np.zeros(3,float)
     oi=int(obs[t,i])+1; direct[oi]=float(state_trust[t,i]); counters.review_ops+=3
+    # robust relation family: ignore low-weight edges and cap each edge contribution
     used=0
     for k,j in inc[i]:
         w=float(rel_trust[t,k])
@@ -232,11 +236,13 @@ def family_votes(obs,obs_r,state_trust,rel_trust,cur,inc,t,i,policy,counters):
         for qi,cand in enumerate((-1,0,1)):
             rel[qi]+=min(.85,w)*(relation(cand,int(cur[t,j]))==int(obs_r[t,k])); counters.review_ops+=1
     if used: rel/=used
+    # temporal family with change guard: equal neighbors are strong; disagreeing neighbors weak
     neighbors=[]
     if t>0: neighbors.append(int(cur[t-1,i]))
     if t+1<cur.shape[0]: neighbors.append(int(cur[t+1,i]))
     if neighbors:
         if len(neighbors)==2 and neighbors[0]!=neighbors[1]:
+            # likely transition region: do not let time erase a plausible new state
             for v in neighbors: temp[v+1]+=.25
         else:
             for v in neighbors: temp[v+1]+=1.0/len(neighbors)
@@ -246,18 +252,22 @@ def family_votes(obs,obs_r,state_trust,rel_trust,cur,inc,t,i,policy,counters):
 
 def second_stage_review(obs,obs_r,state_trust,rel_trust,edges,base_out,actions,policy,counters):
     out=base_out.copy(); act=actions.copy(); inc=incident_lists(obs.shape[1],edges)
+    # use stage-1 output as context, but review only escalated cells
     cur=base_out.copy()
     for t in range(obs.shape[0]):
         for i in range(obs.shape[1]):
             if actions[t,i] != 'ESCALATE': continue
             direct,rel,temp=family_votes(obs,obs_r,state_trust,rel_trust,cur,inc,t,i,policy,counters)
+            # normalized combined score; relations get most weight only when locally coherent
             combo=.80*direct + 1.35*rel + .90*temp
             order=np.argsort(combo); best=int(order[-1]); second=int(order[-2])
             margin=float(combo[best]-combo[second])
             proposed=best-1; observed=int(obs[t,i])
+            # count evidence families whose own winner supports proposed
             supports=0
             for fam in (direct,rel,temp):
                 if fam.sum()>0 and int(np.argmax(fam))==best: supports+=1
+            # change-point guard: if past/future disagree, require stronger non-temporal support
             transition=(t>0 and t+1<obs.shape[0] and int(cur[t-1,i])!=int(cur[t+1,i]))
             if transition:
                 enough = supports>=2 and margin >= max(policy.review_change_guard, policy.review_min_margin)
@@ -316,10 +326,12 @@ def eval_world(rng,cfg,policy):
 
 def scenario_grid():
     rows=[]
+    # 144 scenarios: enough breadth while keeping runtime modest.
     for persistence in (.80,.94,.98):
         for p_state in (.03,.12,.22):
             for p_rel in (.03,.18,.38):
                 for attack in ('none','poison','relations','stale','mixed'):
+                    # alternate legitimate-change/burst dimensions deterministically to avoid cartesian explosion
                     idx=len(rows)
                     rows.append(dict(tmax=14,n=16,degree=4,persistence=persistence,
                                      shock=(idx%3==0),identity_change=(idx%4==0),burst=(idx%2==0),
