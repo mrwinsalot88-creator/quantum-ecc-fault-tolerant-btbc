@@ -36,7 +36,6 @@ def derive_diverse_history_consensus(mapping: Mapping[str, Any], *, max_current_
         current_value=str(latest.get('value'))
         if _row_score(latest)>max_current_score: continue
         current_time=latest.get('valid_from')
-        # Collapse repeated rows from the same provenance family to its strongest witness.
         fam_best={}
         for mid,row in rows.items():
             if str(mid)==latest_id: continue
@@ -77,20 +76,17 @@ def derive_diverse_history_consensus(mapping: Mapping[str, Any], *, max_current_
 def main():
     p=argparse.ArgumentParser(); p.add_argument('--scenarios',required=True); p.add_argument('--limit',type=int,default=0); p.add_argument('--out',required=True)
     a=p.parse_args(); files=_files(Path(a.scenarios),a.limit)
-    totals=defaultdict(lambda:defaultdict(int)); worlds=0; anchors=0; worlds_with=0
     import scripts.test_nonoracle_bridge_v2 as v2
     original=v2.derive_history_consensus
     v2.derive_history_consensus=derive_diverse_history_consensus
     try:
         details=[]
         for fp in files:
-            sc=_load_world(fp); r=v2.diagnose_world(sc); worlds+=1; anchors+=int(r.get('anchor_count',0)); worlds_with+=int(r.get('anchor_count',0)>0)
-            details.append({'file':fp.name,**r})
-            for arm,m in r['arms'].items():
-                for k,v in m.items():
-                    if isinstance(v,(int,bool)): totals[arm][k]+=int(v)
-        summary={'worlds':worlds,'worlds_with_anchors':worlds_with,'anchor_count':anchors,'arms':{k:dict(v) for k,v in totals.items()}}
-        Path(a.out).parent.mkdir(parents=True,exist_ok=True); Path(a.out).write_text(json.dumps({'summary':summary,'worlds':details},indent=2,sort_keys=True)+'\n')
+            sc=_load_world(fp)
+            details.append({'file':fp.name, **v2.diagnose_world(sc)})
+        summary=v2.summarize(details)
+        Path(a.out).parent.mkdir(parents=True,exist_ok=True)
+        Path(a.out).write_text(json.dumps({'summary':summary,'worlds':details},indent=2,sort_keys=True,default=str)+'\n')
         print(json.dumps(summary,indent=2,sort_keys=True))
     finally:
         v2.derive_history_consensus=original
