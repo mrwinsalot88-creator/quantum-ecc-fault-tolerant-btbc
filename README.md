@@ -2,10 +2,14 @@
 
 BTBC is an experimental adaptive information architecture. The repository currently contains **two separate research tracks**:
 
-1. **Classical AI memory integrity** — the current primary engineering track.
-2. **Quantum / harmonic-geometry experiments** — an exploratory research track that remains separate from the AI-memory claims.
+1. **Classical AI memory integrity** — provenance/history-aware conservative correction.
+2. **Native qutrit quantum error-control experiments** — balanced-trinary `|-1>`, `|0>`, `|+1>` simulations with matched conventional controls.
 
-The current priority is to test whether BTBC can improve the reliability of persistent LLM memory under controlled faults while explicitly limiting destructive corrections.
+Both tracks are being tested with frozen benchmarks, ablations, negative-result retention, and explicit limits on what the evidence supports.
+
+For the current quantum evidence ledger, including failed criteria and the active hard confidence validation, see:
+
+**[`docs/BTBC_QUANTUM_VALIDATION_STATUS.md`](docs/BTBC_QUANTUM_VALIDATION_STATUS.md)**
 
 ---
 
@@ -78,9 +82,9 @@ The strongest current technical interpretation is therefore:
 
 ## New branch: `btbc-local-agent`
 
-This branch is for the first **real LLM-level A/B memory experiment**.
+This branch is for the first **real LLM-level A/B memory experiment** and the current frozen qutrit validation work.
 
-The goal is to run the **same local GGUF model** in two conditions:
+The memory goal is to run the **same local GGUF model** in two conditions:
 
 ### Agent A — plain memory
 
@@ -227,22 +231,57 @@ All three outcomes are scientifically useful.
 
 ## Important boundaries
 
-The current AI-memory experiment does **not** establish:
+The current experiments do **not** establish:
 
 - AI consciousness or sentience,
 - a universal physical 3-6-9 law,
-- quantum-computing advantage,
-- or superiority over every existing AI-memory system.
+- hardware quantum-computing advantage,
+- or superiority over every existing AI-memory or QEC system.
 
-The quantum track requires its own valid code family, operators, decoder, and circuit-level benchmarks.
+The memory and quantum tracks remain experimentally separate unless a future coupled benchmark demonstrates a shared mechanism under controlled conditions.
 
 ---
 
-## Quantum / harmonic-geometry track
+## Quantum / native balanced-trinary qutrit track
 
-The repository also contains the earlier harmonic-geometry quantum experiments, including `quantum_ecc.py` and the Qiskit tests. These should be treated as a **separate exploratory track** from the classical memory-integrity work.
+The current native quantum interpretation uses a three-level qutrit basis labeled:
 
-Existing quantum claims should not be used as evidence for the local-agent memory experiment.
+`|-1>`, `|0>`, `|+1>`.
+
+For the quantum controller, **3/6/9 are not implemented as a timing delay**. The intended interpretation is same-cycle evaluation:
+
+- `0` = simultaneous decision space,
+- `3` = raw syndrome/error evidence,
+- `6` = same-cycle consistency/confidence evaluation,
+- `9` = immediate fail-safe correction when the evidence passes the rule.
+
+### Current hardest completed result
+
+The completed full-generalized-Pauli `[[9,1,3]]_3` benchmark used arbitrary unknown logical qutrit states, generalized X/Z/mixed faults, noisy syndrome readout, extraction back-action, recovery faults, correlated block bursts, 100 cycles, 8 asymmetric noise profiles, 5 frozen seeds, and matched random streams.
+
+Pooled over **40,000 trials per arm**:
+
+| Decoder | Logical failure rate | Mean unknown-state fidelity | False corrections |
+|---|---:|---:|---:|
+| BTBC strict same-cycle unanimity | 45.620% | 0.657665 | 17 |
+| Strong three-read component ML/plurality | 38.770% | 0.709916 | 14,490 |
+| Latest-read conventional | 54.025% | 0.595109 | 250,748 |
+| BTBC no-9 | 77.030% | 0.421775 | 0 |
+| Perfect-current reference | 34.5275% | 0.740736 | 0 |
+
+This result is **mixed and did not pass all primary criteria**. Strict BTBC unanimity strongly suppressed false corrections and beat the naive latest-read decoder, but it lost to the stronger same-information ML/plurality decoder on logical failure and fidelity.
+
+The exact generic-unanimity control matched BTBC, so the measured behavior belongs to the decoder rule, not independently to the numerical labels.
+
+### Active hard validation
+
+A new frozen experiment is now testing a **same-cycle confidence-weighted** rule on new seeds. It can correct immediately from strong 2-of-3 evidence when the syndrome is internally consistent, while still abstaining on contradictory evidence. The strong same-information ML baseline remains in the test.
+
+The previous held-out results are not being rewritten or discarded.
+
+Full methodology, exact completed results, contract correction, active test criteria, and publication boundaries are maintained in:
+
+**[`docs/BTBC_QUANTUM_VALIDATION_STATUS.md`](docs/BTBC_QUANTUM_VALIDATION_STATUS.md)**
 
 ---
 
@@ -264,7 +303,9 @@ so the LLM runtime does not unnecessarily disturb the quantum environment.
 
 ---
 
-## Immediate next milestone
+## Immediate next milestones
+
+### Memory track
 
 Build and run the local A/B harness, then freeze:
 
@@ -277,6 +318,15 @@ Build and run the local A/B harness, then freeze:
 7. environment versions.
 
 After the local result is reproducible, move the frozen controller to an external or public long-term-memory workload and seek independent reproduction.
+
+### Quantum track
+
+1. Finish the independent confidence-weighted hard validation on new seeds.
+2. If it survives, move from Pauli-frame Monte Carlo to explicit qutrit syndrome-extraction circuits.
+3. Add coherent-error and leakage models.
+4. Measure logical-error curves and pseudothreshold behavior.
+5. Compare equal-resource qutrit decoders and report qutrit/ancilla/gate/depth/measurement/latency costs.
+6. Seek independent reproduction before using strong performance claims in publication materials.
 
 ---
 
