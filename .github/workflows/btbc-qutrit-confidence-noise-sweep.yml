@@ -1,0 +1,26 @@
+name: BTBC confidence qutrit noise stress sweep
+
+on:
+  push:
+    branches: [btbc-local-agent]
+    paths:
+      - 'scripts/test_btbc_qutrit_confidence_noise_sweep.py'
+      - '.github/workflows/btbc-qutrit-confidence-noise-sweep.yml'
+  workflow_dispatch:
+
+jobs:
+  qutrit-confidence-noise-sweep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run frozen qutrit confidence robustness sweep
+        run: python scripts/test_btbc_qutrit_confidence_noise_sweep.py
+      - name: Upload robustness sweep result
+        uses: actions/upload-artifact@v4
+        with:
+          name: btbc-qutrit-confidence-noise-sweep-results
+          path: artifacts/btbc_qutrit_confidence_noise_sweep_results.json
