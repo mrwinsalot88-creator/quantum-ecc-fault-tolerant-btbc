@@ -1,0 +1,63 @@
+name: BTBC false-consensus attack
+
+on:
+  push:
+    branches: [btbc-local-agent]
+    paths:
+      - 'scripts/inject_false_consensus.py'
+      - 'scripts/test_nonoracle_bridge_v2.py'
+      - '.github/workflows/btbc-false-consensus-attack.yml'
+  workflow_dispatch:
+
+jobs:
+  false-consensus:
+    runs-on: ubuntu-24.04
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: btbc-local-agent
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned dependencies
+        run: python -m pip install --upgrade pip && pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0 joblib==1.5.3 pytest
+      - name: Verify bridge-v2 tests
+        run: pytest tests/test_nonoracle_bridge_v2.py -q
+      - name: Generate base worlds
+        run: >-
+          python scripts/generate_worlds.py
+          --num-worlds 200 --min-fields 8 --max-fields 20 --temporal-depth 7
+          --corruption-rate 0.10 --high-trust-corruption-fraction 0.30
+          --relationship-density 0.20 --duplicate-conflict-rate 0.20
+          --burstiness 0.35 --legitimate-change-rate 0.25
+          --provenance-noise 0.50 --seed 369963
+          --out-dir results/false_consensus/base --clean
+      - name: Inject coordinated false consensus
+        run: >-
+          python scripts/inject_false_consensus.py
+          --src results/false_consensus/base
+          --out results/false_consensus/attacked
+          --seed 963369 --attack-rate 0.55 --min-colluders 3 --max-colluders 4
+      - name: Run adversarial comparison
+        run: >-
+          python scripts/test_nonoracle_bridge_v2.py
+          --scenarios results/false_consensus/attacked --limit 200
+          --out results/false_consensus/summary.json
+      - name: Print attack summary
+        run: |
+          python - <<'PY'
+          import json
+          attack=json.load(open('results/false_consensus/attacked/manifest.json'))
+          result=json.load(open('results/false_consensus/summary.json'))['summary']
+          print('ATTACKED_FIELDS', attack['attacked_fields'])
+          print(json.dumps(result, indent=2, sort_keys=True))
+          PY
+      - name: Upload attack results
+        uses: actions/upload-artifact@v4
+        with:
+          name: btbc-false-consensus-attack-results
+          path: |
+            results/false_consensus/attacked/manifest.json
+            results/false_consensus/summary.json
