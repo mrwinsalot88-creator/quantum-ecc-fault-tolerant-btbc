@@ -9,9 +9,9 @@ from __future__ import annotations
 import argparse, json
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, Mapping
+from typing import Any, Mapping
 
-from scripts.test_nonoracle_bridge_v2 import _files, _load_world, run_world, _row_score, _latest_active_id
+from scripts.test_nonoracle_bridge_v2 import _files, _load_world, _row_score, _latest_active_id
 
 
 def source_family(source: Any) -> str:
@@ -84,7 +84,7 @@ def main():
     try:
         details=[]
         for fp in files:
-            sc=_load_world(fp); r=run_world(sc); worlds+=1; anchors+=int(r.get('anchor_count',0)); worlds_with+=int(r.get('anchor_count',0)>0)
+            sc=_load_world(fp); r=v2.diagnose_world(sc); worlds+=1; anchors+=int(r.get('anchor_count',0)); worlds_with+=int(r.get('anchor_count',0)>0)
             details.append({'file':fp.name,**r})
             for arm,m in r['arms'].items():
                 for k,v in m.items():
