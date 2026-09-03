@@ -4,7 +4,7 @@ on:
   push:
     branches: [btbc-local-agent]
     paths:
-      - 'scripts/test_mixed_provenance_attack_v2.py'
+      - 'scripts/test_mixed_provenance_attack_v3.py'
       - '.github/workflows/btbc-mixed-provenance-proof.yml'
   workflow_dispatch:
 
@@ -38,7 +38,7 @@ jobs:
           --seed 9632026 --attack-rate 0.40 --min-colluders 3 --max-colluders 4
       - name: Run provenance-family-aware comparison
         run: >-
-          python scripts/test_mixed_provenance_attack_v2.py
+          python scripts/test_mixed_provenance_attack_v3.py
           --scenarios results/mixed_proof/attacked --limit 120
           --out results/mixed_proof/summary.json
       - name: Enforce proof criteria
