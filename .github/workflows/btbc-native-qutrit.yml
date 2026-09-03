@@ -6,6 +6,7 @@ on:
     paths:
       - 'scripts/test_btbc_native_qutrit.py'
       - '.github/workflows/btbc-native-qutrit.yml'
+      - '.github/workflows/btbc-native-qutrit-trigger.txt'
   workflow_dispatch:
 
 jobs:
