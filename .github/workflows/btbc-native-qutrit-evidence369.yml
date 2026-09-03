@@ -1,0 +1,27 @@
+name: BTBC native qutrit evidence369 test
+
+on:
+  push:
+    branches: [btbc-local-agent]
+    paths:
+      - 'scripts/test_btbc_native_qutrit_evidence369.py'
+      - '.github/workflows/btbc-native-qutrit-evidence369.yml'
+  workflow_dispatch:
+
+jobs:
+  evidence369:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run frozen evidence-triggered native qutrit benchmark
+        run: python scripts/test_btbc_native_qutrit_evidence369.py
+      - name: Upload result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: btbc-native-qutrit-evidence369-results
+          path: artifacts/btbc_native_qutrit_evidence369_results.json
+          if-no-files-found: warn
