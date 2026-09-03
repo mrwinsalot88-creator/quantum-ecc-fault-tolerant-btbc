@@ -1,0 +1,28 @@
+name: BTBC hard matched-information native qutrit benchmark
+
+on:
+  push:
+    branches: [btbc-local-agent]
+    paths:
+      - 'scripts/test_btbc_native_qutrit_hard_matched.py'
+      - '.github/workflows/btbc-native-qutrit-hard-matched.yml'
+  workflow_dispatch:
+
+jobs:
+  hard-matched-qutrit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run hard matched-information benchmark
+        run: python scripts/test_btbc_native_qutrit_hard_matched.py
+      - name: Upload hard benchmark result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: btbc-native-qutrit-hard-matched-results
+          path: artifacts/btbc_native_qutrit_hard_matched_results.json
+          if-no-files-found: warn
