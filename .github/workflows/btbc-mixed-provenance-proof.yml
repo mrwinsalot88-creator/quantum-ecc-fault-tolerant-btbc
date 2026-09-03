@@ -4,7 +4,8 @@ on:
   push:
     branches: [btbc-local-agent]
     paths:
-      - 'scripts/test_mixed_provenance_attack_v4.py'
+      - 'scripts/test_mixed_provenance_attack.py'
+      - 'scripts/inject_mixed_evidence.py'
       - '.github/workflows/btbc-mixed-provenance-proof.yml'
   workflow_dispatch:
 
@@ -22,32 +23,37 @@ jobs:
           python-version: '3.13'
       - name: Install pinned dependencies
         run: python -m pip install --upgrade pip && pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0 joblib==1.5.3 pytest
-      - name: Generate mixed base worlds
+      - name: Verify bridge-v2 tests
+        run: pytest tests/test_nonoracle_bridge_v2.py -q
+      - name: Generate base worlds
         run: >-
           python scripts/generate_worlds.py
-          --num-worlds 120 --min-fields 8 --max-fields 20 --temporal-depth 7
-          --corruption-rate 0.16 --high-trust-corruption-fraction 0.30
-          --relationship-density 0.25 --duplicate-conflict-rate 0.20
-          --burstiness 0.35 --legitimate-change-rate 0.20
-          --provenance-noise 0.35 --seed 3692026
+          --num-worlds 200 --min-fields 8 --max-fields 20 --temporal-depth 7
+          --corruption-rate 0.10 --high-trust-corruption-fraction 0.30
+          --relationship-density 0.20 --duplicate-conflict-rate 0.20
+          --burstiness 0.35 --legitimate-change-rate 0.25
+          --provenance-noise 0.50 --seed 369369
           --out-dir results/mixed_proof/base --clean
-      - name: Inject coordinated false consensus
+      - name: Inject mixed genuine and colluding evidence
         run: >-
-          python scripts/inject_false_consensus.py
-          --src results/mixed_proof/base --out results/mixed_proof/attacked
-          --seed 9632026 --attack-rate 0.40 --min-colluders 3 --max-colluders 4
-      - name: Run provenance-family-aware comparison
+          python scripts/inject_mixed_evidence.py
+          --src results/mixed_proof/base
+          --out results/mixed_proof/attacked
+          --seed 963963 --genuine-rate 0.55 --collusion-rate 0.55
+      - name: Run diversity-aware mixed proof
         run: >-
-          python scripts/test_mixed_provenance_attack_v4.py
-          --scenarios results/mixed_proof/attacked --limit 120
+          python scripts/test_mixed_provenance_attack.py
+          --scenarios results/mixed_proof/attacked --limit 200
           --out results/mixed_proof/summary.json
       - name: Enforce proof criteria
         run: |
           python - <<'PY'
-          import json, sys
+          import json,sys
+          manifest=json.load(open('results/mixed_proof/attacked/manifest.json'))
           s=json.load(open('results/mixed_proof/summary.json'))['summary']
           arm=s['arms']['btbc_v2_history_anchor']
           criteria={
+            'mixed_fixture_present': manifest['genuine_fields'] > 0 and manifest['colluded_fields'] > 0,
             'anchors_present': s['anchor_count'] > 0,
             'real_repairs_present': arm['true_repairs'] > 0,
             'zero_false_corrections': arm['false_corrections'] == 0,
@@ -55,10 +61,11 @@ jobs:
             'net_error_reduction': arm['final_error_count'] < arm['pre_error_count'],
             'no_worlds_worsened': arm['worlds_worsened'] == 0,
           }
-          print(json.dumps({'summary':s,'criteria':criteria},indent=2,sort_keys=True))
+          print(json.dumps({'manifest':{k:v for k,v in manifest.items() if k!='cases'},'summary':s,'criteria':criteria},indent=2,sort_keys=True))
           if not all(criteria.values()): sys.exit(2)
           PY
-      - uses: actions/upload-artifact@v4
+      - name: Upload proof results
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: btbc-mixed-provenance-proof-results
