@@ -1,0 +1,76 @@
+name: BTBC explicit mixed corroboration proof
+
+on:
+  push:
+    branches: [btbc-local-agent]
+    paths:
+      - 'scripts/inject_true_corroboration.py'
+      - 'scripts/test_mixed_provenance_attack_v4.py'
+      - '.github/workflows/btbc-explicit-mixed-proof.yml'
+  workflow_dispatch:
+
+jobs:
+  proof:
+    runs-on: ubuntu-24.04
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: btbc-local-agent
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned dependencies
+        run: python -m pip install --upgrade pip && pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0 joblib==1.5.3 pytest
+      - name: Generate fresh worlds
+        run: >-
+          python scripts/generate_worlds.py
+          --num-worlds 120 --min-fields 8 --max-fields 20 --temporal-depth 7
+          --corruption-rate 0.16 --high-trust-corruption-fraction 0.30
+          --relationship-density 0.25 --duplicate-conflict-rate 0.20
+          --burstiness 0.35 --legitimate-change-rate 0.20
+          --provenance-noise 0.35 --seed 3692036
+          --out-dir results/explicit_mixed/base --clean
+      - name: Inject genuine corroboration opportunities
+        run: >-
+          python scripts/inject_true_corroboration.py
+          --src results/explicit_mixed/base --out results/explicit_mixed/supported
+          --seed 6369203 --support-rate 0.75 --min-witnesses 2 --max-witnesses 3
+      - name: Inject coordinated false consensus into clean fields
+        run: >-
+          python scripts/inject_false_consensus.py
+          --src results/explicit_mixed/supported --out results/explicit_mixed/mixed
+          --seed 9632036 --attack-rate 0.40 --min-colluders 3 --max-colluders 4
+      - name: Run frozen BTBC comparison
+        run: >-
+          python scripts/test_mixed_provenance_attack_v4.py
+          --scenarios results/explicit_mixed/mixed --limit 120
+          --out results/explicit_mixed/summary.json
+      - name: Enforce frozen proof criteria
+        run: |
+          python - <<'PY'
+          import json, sys
+          s=json.load(open('results/explicit_mixed/summary.json'))['summary']
+          arm=s['arms']['btbc_v2_history_anchor']
+          consensus=s['arms']['consensus_only']
+          criteria={
+            'anchors_present': s['anchor_count'] > 0,
+            'real_repairs_present': arm['true_repairs'] > 0,
+            'zero_false_corrections': arm['false_corrections'] == 0,
+            'zero_legitimate_change_damage': arm['legitimate_change_damage'] == 0,
+            'net_error_reduction': arm['final_error_count'] < arm['pre_error_count'],
+            'no_worlds_worsened': arm['worlds_worsened'] == 0,
+            'safer_or_equal_to_consensus': arm['false_corrections'] <= consensus['false_corrections'],
+          }
+          print(json.dumps({'summary':s,'criteria':criteria},indent=2,sort_keys=True))
+          if not all(criteria.values()): sys.exit(2)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: btbc-explicit-mixed-proof-results
+          path: |
+            results/explicit_mixed/supported/true_corroboration_manifest.json
+            results/explicit_mixed/mixed/manifest.json
+            results/explicit_mixed/summary.json
