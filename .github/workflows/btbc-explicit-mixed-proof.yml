@@ -5,7 +5,7 @@ on:
     branches: [btbc-local-agent]
     paths:
       - 'scripts/inject_true_corroboration.py'
-      - 'scripts/test_mixed_provenance_attack_v4.py'
+      - 'scripts/test_mixed_provenance_attack_v5.py'
       - '.github/workflows/btbc-explicit-mixed-proof.yml'
   workflow_dispatch:
 
@@ -44,7 +44,7 @@ jobs:
           --seed 9632036 --attack-rate 0.40 --min-colluders 3 --max-colluders 4
       - name: Run frozen BTBC comparison
         run: >-
-          python scripts/test_mixed_provenance_attack_v4.py
+          python scripts/test_mixed_provenance_attack_v5.py
           --scenarios results/explicit_mixed/mixed --limit 120
           --out results/explicit_mixed/summary.json
       - name: Enforce frozen proof criteria
