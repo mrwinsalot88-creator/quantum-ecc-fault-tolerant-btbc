@@ -1,0 +1,133 @@
+name: BTBC mixed provenance replication
+
+on:
+  push:
+    branches: [btbc-local-agent]
+    paths:
+      - '.github/workflows/btbc-mixed-provenance-replication.yml'
+  workflow_dispatch:
+
+jobs:
+  replicate:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: s1
+            world_seed: 369370
+            evidence_seed: 963964
+          - id: s2
+            world_seed: 369371
+            evidence_seed: 963965
+          - id: s3
+            world_seed: 369372
+            evidence_seed: 963966
+          - id: s4
+            world_seed: 369373
+            evidence_seed: 963967
+          - id: s5
+            world_seed: 369374
+            evidence_seed: 963968
+    runs-on: ubuntu-24.04
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: btbc-local-agent
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned dependencies
+        run: python -m pip install --upgrade pip && pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0 joblib==1.5.3 pytest
+      - name: Verify frozen bridge tests
+        run: pytest tests/test_nonoracle_bridge_v2.py -q
+      - name: Generate unseen worlds
+        run: >-
+          python scripts/generate_worlds.py
+          --num-worlds 200 --min-fields 8 --max-fields 20 --temporal-depth 7
+          --corruption-rate 0.10 --high-trust-corruption-fraction 0.30
+          --relationship-density 0.20 --duplicate-conflict-rate 0.20
+          --burstiness 0.35 --legitimate-change-rate 0.25
+          --provenance-noise 0.50 --seed ${{ matrix.world_seed }}
+          --out-dir results/replication/${{ matrix.id }}/base --clean
+      - name: Inject frozen mixed evidence
+        run: >-
+          python scripts/inject_mixed_evidence.py
+          --src results/replication/${{ matrix.id }}/base
+          --out results/replication/${{ matrix.id }}/attacked
+          --seed ${{ matrix.evidence_seed }} --genuine-rate 0.55 --collusion-rate 0.55
+      - name: Run frozen diversity-aware controller
+        run: >-
+          python scripts/test_mixed_provenance_attack.py
+          --scenarios results/replication/${{ matrix.id }}/attacked --limit 200
+          --out results/replication/${{ matrix.id }}/summary.json
+      - name: Enforce per-seed safety criteria
+        run: |
+          python - <<'PY'
+          import json,sys
+          s=json.load(open('results/replication/${{ matrix.id }}/summary.json'))['summary']
+          a=s['arms']['btbc_v2_history_anchor']
+          criteria={
+            'zero_false_corrections': a['false_corrections']==0,
+            'zero_legitimate_change_damage': a['legitimate_change_damage']==0,
+            'no_worlds_worsened': a['worlds_worsened']==0,
+          }
+          print(json.dumps({'seed':'${{ matrix.id }}','arm':a,'criteria':criteria},indent=2,sort_keys=True))
+          if not all(criteria.values()): sys.exit(2)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: btbc-mixed-replication-${{ matrix.id }}
+          path: |
+            results/replication/${{ matrix.id }}/attacked/manifest.json
+            results/replication/${{ matrix.id }}/summary.json
+
+  aggregate:
+    needs: replicate
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: btbc-mixed-replication-*
+          path: downloaded
+      - name: Aggregate frozen replication
+        run: |
+          python - <<'PY'
+          import json, glob, sys
+          files=sorted(glob.glob('downloaded/*/summary.json'))
+          rows=[]
+          for fp in files:
+              s=json.load(open(fp))['summary']
+              a=s['arms']['btbc_v2_history_anchor']
+              rows.append({'file':fp,'worlds':s['worlds'],'anchors':s['anchor_count'],**a})
+          pooled={k:sum(int(r.get(k,0)) for r in rows) for k in [
+              'worlds','anchors','pre_error_count','final_error_count','error_delta',
+              'true_repairs','false_corrections','legitimate_change_damage',
+              'changed_field_count','worlds_improved','worlds_tied','worlds_worsened']}
+          seeds_with_repairs=sum(r['true_repairs']>0 for r in rows)
+          seeds_with_net_reduction=sum(r['final_error_count']<r['pre_error_count'] for r in rows)
+          criteria={
+              'five_unseen_seeds': len(rows)==5,
+              'one_thousand_worlds': pooled['worlds']==1000,
+              'pooled_true_repairs_present': pooled['true_repairs']>0,
+              'repair_reproduces_across_seeds': seeds_with_repairs>=2,
+              'net_reduction_reproduces_across_seeds': seeds_with_net_reduction>=2,
+              'pooled_net_error_reduction': pooled['final_error_count']<pooled['pre_error_count'],
+              'zero_false_corrections': pooled['false_corrections']==0,
+              'zero_legitimate_change_damage': pooled['legitimate_change_damage']==0,
+              'zero_worlds_worsened': pooled['worlds_worsened']==0,
+          }
+          out={'per_seed':rows,'pooled':pooled,'seeds_with_repairs':seeds_with_repairs,
+               'seeds_with_net_reduction':seeds_with_net_reduction,'criteria':criteria}
+          open('replication_summary.json','w').write(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,indent=2,sort_keys=True))
+          if not all(criteria.values()): sys.exit(2)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: btbc-mixed-replication-aggregate
+          path: replication_summary.json
