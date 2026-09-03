@@ -34,7 +34,7 @@ jobs:
           python scripts/generate_worlds.py
           --num-worlds 300
           --min-fields 8
-          --max-fields 24
+          --max-fields 20
           --temporal-depth 7
           --corruption-rate 0.12
           --high-trust-corruption-fraction 0.35
