@@ -1,0 +1,56 @@
+name: BTBC synthetic corroboration diagnostics
+
+on:
+  push:
+    branches: [btbc-local-agent]
+  workflow_dispatch:
+
+jobs:
+  corroboration:
+    runs-on: ubuntu-24.04
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: btbc-local-agent
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip && pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0 joblib==1.5.3 pytest
+      - name: Test corroboration diagnostics
+        run: pytest tests/test_diagnose_corroboration.py tests/test_diagnose_worlds.py -q
+      - name: Recreate first 20 worlds
+        run: >-
+          python scripts/generate_worlds.py
+          --num-worlds 20
+          --min-fields 5
+          --max-fields 20
+          --temporal-depth 5
+          --corruption-rate 0.10
+          --high-trust-corruption-fraction 0.20
+          --relationship-density 0.15
+          --duplicate-conflict-rate 0.10
+          --burstiness 0.20
+          --legitimate-change-rate 0.10
+          --provenance-noise 0.25
+          --seed 369
+          --out-dir results/corroboration_worlds
+          --clean
+      - name: Run synthetic corroboration A/B
+        run: >-
+          python scripts/diagnose_corroboration.py
+          --scenarios results/corroboration_worlds
+          --limit 20
+          --witness-fields 3
+          --out results/corroboration/summary.json
+      - name: Print summary
+        run: cat results/corroboration/summary.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: btbc-synthetic-corroboration-diagnostics
+          path: |
+            results/corroboration_worlds/manifest.json
+            results/corroboration/summary.json
+          if-no-files-found: error

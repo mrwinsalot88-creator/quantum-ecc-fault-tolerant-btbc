@@ -1,0 +1,55 @@
+name: BTBC non-oracle bridge v2 experiment
+
+on:
+  push:
+    branches: [btbc-local-agent]
+  workflow_dispatch:
+
+jobs:
+  bridge-v2:
+    runs-on: ubuntu-24.04
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: btbc-local-agent
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned dependencies
+        run: python -m pip install --upgrade pip && pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0 joblib==1.5.3 pytest
+      - name: Test non-oracle bridge v2
+        run: pytest tests/test_nonoracle_bridge_v2.py -q
+      - name: Generate locked 200-world suite
+        run: >-
+          python scripts/generate_worlds.py
+          --num-worlds 200
+          --min-fields 5
+          --max-fields 20
+          --temporal-depth 5
+          --corruption-rate 0.10
+          --high-trust-corruption-fraction 0.20
+          --relationship-density 0.15
+          --duplicate-conflict-rate 0.10
+          --burstiness 0.20
+          --legitimate-change-rate 0.10
+          --provenance-noise 0.25
+          --seed 369
+          --out-dir results/bridge_v2/worlds
+          --clean
+      - name: Run 200-world non-oracle bridge v2 experiment
+        run: >-
+          python scripts/test_nonoracle_bridge_v2.py
+          --scenarios results/bridge_v2/worlds
+          --limit 200
+          --out results/bridge_v2/nonoracle_summary.json
+      - name: Print summary
+        run: python -c "import json; j=json.load(open('results/bridge_v2/nonoracle_summary.json')); print(json.dumps(j['summary'], indent=2, sort_keys=True))"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: btbc-nonoracle-bridge-v2-results
+          path: |
+            results/bridge_v2/worlds/manifest.json
+            results/bridge_v2/nonoracle_summary.json
+          if-no-files-found: error

@@ -1,0 +1,26 @@
+name: BTBC native balanced-trinary qutrit test
+
+on:
+  push:
+    branches: [btbc-local-agent]
+    paths:
+      - 'scripts/test_btbc_native_qutrit.py'
+      - '.github/workflows/btbc-native-qutrit.yml'
+      - '.github/workflows/btbc-native-qutrit-trigger.txt'
+  workflow_dispatch:
+
+jobs:
+  native-qutrit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run frozen native balanced-trinary benchmark
+        run: python scripts/test_btbc_native_qutrit.py
+      - name: Upload result
+        uses: actions/upload-artifact@v4
+        with:
+          name: btbc-native-qutrit-results
+          path: artifacts/btbc_native_qutrit_results.json

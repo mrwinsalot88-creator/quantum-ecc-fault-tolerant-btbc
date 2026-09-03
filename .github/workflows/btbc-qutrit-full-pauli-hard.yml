@@ -1,0 +1,28 @@
+name: BTBC hard full-Pauli qutrit benchmark
+
+on:
+  push:
+    branches: [btbc-local-agent]
+    paths:
+      - 'scripts/test_btbc_qutrit_full_pauli_hard.py'
+      - '.github/workflows/btbc-qutrit-full-pauli-hard.yml'
+  workflow_dispatch:
+
+jobs:
+  qutrit-full-pauli-hard:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run hard full-Pauli qutrit benchmark
+        run: python scripts/test_btbc_qutrit_full_pauli_hard.py
+      - name: Upload benchmark result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: btbc-qutrit-full-pauli-hard-results
+          path: artifacts/btbc_qutrit_full_pauli_hard_results.json
+          if-no-files-found: warn

@@ -1,0 +1,36 @@
+name: BTBC quantum fail-safe proof
+
+on:
+  push:
+    branches: [btbc-local-agent]
+    paths:
+      - 'scripts/test_btbc_quantum_failsafe.py'
+      - 'quantum_ecc.py'
+      - 'test_quantum_ecc.py'
+      - '.github/workflows/btbc-quantum-failsafe-proof.yml'
+  workflow_dispatch:
+
+jobs:
+  quantum-failsafe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install quantum dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install qiskit qiskit-aer numpy
+      - name: Record existing harmonic-geometry unit-test status
+        continue-on-error: true
+        run: python -m unittest -v test_quantum_ecc.py
+      - name: Run frozen 0-3-6-9 binary fail-safe benchmark
+        run: python scripts/test_btbc_quantum_failsafe.py
+      - name: Upload quantum result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: btbc-quantum-failsafe-results
+          path: artifacts/btbc_quantum_failsafe_results.json

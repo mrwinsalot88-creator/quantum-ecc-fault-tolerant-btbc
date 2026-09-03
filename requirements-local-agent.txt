@@ -1,0 +1,7 @@
+# BTBC local-agent experiment dependencies
+llama-cpp-python
+numpy
+pandas
+scikit-learn
+joblib
+pytest

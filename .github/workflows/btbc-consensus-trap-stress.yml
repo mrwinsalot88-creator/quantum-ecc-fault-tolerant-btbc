@@ -1,0 +1,64 @@
+name: BTBC consensus-trap stress test
+
+on:
+  push:
+    branches: [btbc-local-agent]
+    paths:
+      - '.github/workflows/btbc-consensus-trap-stress.yml'
+      - 'scripts/test_nonoracle_bridge_v2.py'
+      - 'scripts/generate_worlds.py'
+      - 'btbc/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  consensus-trap:
+    runs-on: ubuntu-24.04
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: btbc-local-agent
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned dependencies
+        run: python -m pip install --upgrade pip && pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0 joblib==1.5.3 pytest
+      - name: Verify bridge-v2 tests
+        run: pytest tests/test_nonoracle_bridge_v2.py -q
+      - name: Generate adversarial consensus-trap suite
+        run: >-
+          python scripts/generate_worlds.py
+          --num-worlds 300
+          --min-fields 8
+          --max-fields 20
+          --temporal-depth 7
+          --corruption-rate 0.12
+          --high-trust-corruption-fraction 0.35
+          --relationship-density 0.20
+          --duplicate-conflict-rate 0.30
+          --burstiness 0.45
+          --legitimate-change-rate 0.40
+          --provenance-noise 0.55
+          --seed 963369
+          --out-dir results/consensus_trap/worlds
+          --clean
+      - name: Run consensus vs BTBC-v2 stress comparison
+        run: >-
+          python scripts/test_nonoracle_bridge_v2.py
+          --scenarios results/consensus_trap/worlds
+          --limit 300
+          --out results/consensus_trap/summary.json
+      - name: Print stress summary
+        run: python -c "import json; j=json.load(open('results/consensus_trap/summary.json')); print(json.dumps(j['summary'], indent=2, sort_keys=True))"
+      - name: Upload stress results
+        uses: actions/upload-artifact@v4
+        with:
+          name: btbc-consensus-trap-stress-results
+          path: |
+            results/consensus_trap/worlds/manifest.json
+            results/consensus_trap/summary.json
+          if-no-files-found: error

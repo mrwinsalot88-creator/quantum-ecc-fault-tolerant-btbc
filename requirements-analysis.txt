@@ -1,0 +1,6 @@
+# Optional dependencies for BTBC A/B result analysis
+numpy
+pandas
+scipy
+matplotlib
+jupyterlab

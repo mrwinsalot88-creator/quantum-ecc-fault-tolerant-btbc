@@ -1,0 +1,26 @@
+name: BTBC hard confidence-weighted qutrit validation
+
+on:
+  push:
+    branches: [btbc-local-agent]
+    paths:
+      - 'scripts/test_btbc_qutrit_confidence_hard.py'
+      - 'scripts/test_btbc_qutrit_full_pauli_hard.py'
+      - '.github/workflows/btbc-qutrit-confidence-hard.yml'
+  workflow_dispatch:
+
+jobs:
+  qutrit-confidence-hard:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run frozen hard confidence-weighted qutrit validation
+        run: python scripts/test_btbc_qutrit_confidence_hard.py
+      - name: Upload validation result
+        uses: actions/upload-artifact@v4
+        with:
+          name: btbc-qutrit-confidence-hard-results
+          path: artifacts/btbc_qutrit_confidence_hard_results.json

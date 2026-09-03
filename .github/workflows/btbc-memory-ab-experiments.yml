@@ -1,0 +1,77 @@
+name: BTBC memory A/B experiments
+
+on:
+  push:
+    branches: [btbc-local-agent]
+    paths:
+      - '.github/workflows/btbc-memory-ab-experiments.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  memory-ab:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: btbc-local-agent
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install experiment dependencies
+        run: >-
+          python -m pip install --upgrade pip &&
+          pip install
+          numpy==2.3.5
+          pandas==2.2.3
+          scipy==1.17.0
+          scikit-learn==1.8.0
+          joblib==1.5.3
+
+      - name: Run baseline and ablations across seeds 0..4
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p results/ab_runs
+          for s in 0 1 2 3 4; do
+            python tests/compare_agents.py --only-metrics --seed "$s" --out "results/ab_runs/btbc_memory_ab_seed${s}.json"
+            python tests/compare_agents.py --only-metrics --no-relations --seed "$s" --out "results/ab_runs/btbc_memory_ab_no_relations_seed${s}.json"
+            python tests/compare_agents.py --only-metrics --no-temporal --seed "$s" --out "results/ab_runs/btbc_memory_ab_no_temporal_seed${s}.json"
+            python tests/compare_agents.py --only-metrics --no-provenance --seed "$s" --out "results/ab_runs/btbc_memory_ab_no_provenance_seed${s}.json"
+          done
+
+      - name: Merge each condition with strict provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/merge_ab_results.py "results/ab_runs/btbc_memory_ab_seed*.json" --out results/ab_runs/baseline_merged.json
+          python scripts/merge_ab_results.py "results/ab_runs/btbc_memory_ab_no_relations_seed*.json" --out results/ab_runs/no_relations_merged.json
+          python scripts/merge_ab_results.py "results/ab_runs/btbc_memory_ab_no_temporal_seed*.json" --out results/ab_runs/no_temporal_merged.json
+          python scripts/merge_ab_results.py "results/ab_runs/btbc_memory_ab_no_provenance_seed*.json" --out results/ab_runs/no_provenance_merged.json
+
+      - name: Print compact merged summaries
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for name in ['baseline','no_relations','no_temporal','no_provenance']:
+              p=Path(f'results/ab_runs/{name}_merged.json')
+              j=json.loads(p.read_text())
+              print('\n###', name)
+              print('poolable=', j.get('poolable'))
+              print('runs=', len(j.get('runs', [])))
+              print('summary=', json.dumps(j.get('summary', {}), sort_keys=True))
+          PY
+
+      - name: Upload A/B results
+        uses: actions/upload-artifact@v4
+        with:
+          name: btbc-memory-ab-results
+          path: results/ab_runs/
+          if-no-files-found: error
