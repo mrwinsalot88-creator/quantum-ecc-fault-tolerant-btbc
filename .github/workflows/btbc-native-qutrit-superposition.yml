@@ -1,0 +1,27 @@
+name: BTBC native qutrit superposition test
+
+on:
+  push:
+    branches: [btbc-local-agent]
+    paths:
+      - 'scripts/test_btbc_native_qutrit_superposition.py'
+      - '.github/workflows/btbc-native-qutrit-superposition.yml'
+  workflow_dispatch:
+
+jobs:
+  native-qutrit-superposition:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run frozen non-temporal native qutrit benchmark
+        run: python scripts/test_btbc_native_qutrit_superposition.py
+      - name: Upload result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: btbc-native-qutrit-superposition-results
+          path: artifacts/btbc_native_qutrit_superposition_results.json
+          if-no-files-found: warn
